@@ -37,7 +37,9 @@ export default function AuthPage({ type = 'login' }) {
         navigate('/login');
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'An error occurred');
+      // Handle error codes from backend (AUTH_001, AUTH_005, etc.)
+      const errorMessage = err.message || 'An error occurred';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -1,39 +1,38 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
 import GameCard from '../components/GameCard';
 import LoadingScreen from '../components/LoadingScreen';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+import { gamesAPI } from '../utils/apiServices';
 
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [games, setGames] = useState([]);
   const [featuredGames, setFeaturedGames] = useState([]);
-
+  
   useEffect(() => {
     fetchGames();
   }, []);
 
   const fetchGames = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/games`);
-      const allGames = response.data;
+      const response = await gamesAPI.getGames();
+      // Backend returns: { success, code, message, data: { items: [...] } }
+      const allGames = response.data.data?.items || [];
       
       // Shuffle and pick featured games
       const shuffled = [...allGames].sort(() => 0.5 - Math.random());
       setFeaturedGames(shuffled.slice(0, 6));
       setGames(allGames);
     } catch (error) {
-      console.error('Failed to fetch games:', error);
+      console.error('Failed to fetch games:', error.message || error);
       // Mock data for demo
       const mockGames = [
-        { id: 1, name: 'Cyber Adventure', genres: ['Action', 'RPG'], platforms: ['Windows', 'Linux'], price: 29.99, badge: 'New' },
-        { id: 2, name: 'Space Explorer', genres: ['Adventure', 'Sci-Fi'], platforms: ['Windows', 'macOS'], price: 0, badge: 'Free' },
-        { id: 3, name: 'Racing Pro', genres: ['Racing', 'Sports'], platforms: ['Windows'], price: 49.99, badge: 'Popular' },
-        { id: 4, name: 'Puzzle Master', genres: ['Puzzle', 'Casual'], platforms: ['Windows', 'macOS', 'Linux'], price: 9.99 },
-        { id: 5, name: 'Fantasy World', genres: ['RPG', 'Fantasy'], platforms: ['Windows'], price: 59.99, badge: 'Hot' },
-        { id: 6, name: 'Strategy Empire', genres: ['Strategy', 'Simulation'], platforms: ['Windows', 'Linux'], price: 39.99 },
+        { id: '1', name: 'Cyber Adventure', genres: ['Action', 'RPG'], platforms: ['Windows', 'Linux'], pricing: { type: 'paid', price: 29.99, currency: 'USD' }, badge: 'New', media: { thumbnail: 'https://picsum.photos/seed/game1/600/800', banner: 'https://picsum.photos/seed/game1_b/1200/500' }, ownership: { owned: false } },
+        { id: '2', name: 'Space Explorer', genres: ['Adventure', 'Sci-Fi'], platforms: ['Windows', 'macOS'], pricing: { type: 'free', price: 0, currency: 'USD' }, badge: 'Free', media: { thumbnail: 'https://picsum.photos/seed/game2/600/800', banner: 'https://picsum.photos/seed/game2_b/1200/500' }, ownership: { owned: false } },
+        { id: '3', name: 'Racing Pro', genres: ['Racing', 'Sports'], platforms: ['Windows'], pricing: { type: 'paid', price: 49.99, currency: 'USD' }, badge: 'Popular', media: { thumbnail: 'https://picsum.photos/seed/game3/600/800', banner: 'https://picsum.photos/seed/game3_b/1200/500' }, ownership: { owned: false } },
+        { id: '4', name: 'Puzzle Master', genres: ['Puzzle', 'Casual'], platforms: ['Windows', 'macOS', 'Linux'], pricing: { type: 'paid', price: 9.99, currency: 'USD' }, badge: null, media: { thumbnail: 'https://picsum.photos/seed/game4/600/800', banner: 'https://picsum.photos/seed/game4_b/1200/500' }, ownership: { owned: false } },
+        { id: '5', name: 'Fantasy World', genres: ['RPG', 'Fantasy'], platforms: ['Windows'], pricing: { type: 'paid', price: 59.99, currency: 'USD' }, badge: 'Hot', media: { thumbnail: 'https://picsum.photos/seed/game5/600/800', banner: 'https://picsum.photos/seed/game5_b/1200/500' }, ownership: { owned: false } },
+        { id: '6', name: 'Strategy Empire', genres: ['Strategy', 'Simulation'], platforms: ['Windows', 'Linux'], pricing: { type: 'paid', price: 39.99, currency: 'USD' }, badge: null, media: { thumbnail: 'https://picsum.photos/seed/game6/600/800', banner: 'https://picsum.photos/seed/game6_b/1200/500' }, ownership: { owned: false } },
       ];
       setFeaturedGames(mockGames);
       setGames(mockGames);
