@@ -23,7 +23,7 @@ class RegisterScreen extends StatelessWidget {
             const SizedBox(height: 24),
             FilledButton(
               onPressed: () {
-                // TODO: gọi AuthCubit.register + xử lý OTP
+                // TODO: gọi AuthCubit.register
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Đăng ký sẽ tích hợp API thật ở bước sau.')),
                 );
