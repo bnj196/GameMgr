@@ -1,12 +1,12 @@
-import 'package:dio/dio.dart';
-
 import '../../../core/network/api_client.dart';
+import '../../../core/error/failure.dart';
 import '../domain/catalog_repository.dart';
 import '../domain/game.dart';
+import '../../library/domain/library_repository.dart' show mockGames;
 
 class MockCatalogRepository implements CatalogRepository {
   final List<Game> _games;
-
+  
   MockCatalogRepository({List<Game>? games}) : _games = games ?? [];
 
   @override

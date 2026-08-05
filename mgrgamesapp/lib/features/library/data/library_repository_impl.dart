@@ -1,9 +1,14 @@
+import 'package:dio/dio.dart';
+
 import '../../../core/network/api_client.dart';
-import '../domain/game.dart';
+import '../../../core/error/failure.dart';
+import '../../catalog/domain/game.dart';
+import 'library_repository.dart';
 
 class LibraryRepositoryImpl implements LibraryRepository {
-  LibraryRepositoryImpl(this._dio);
   final Dio _dio;
+  
+  LibraryRepositoryImpl(this._dio);
 
   @override
   Future<List<Game>> getMyLibrary() {
@@ -27,10 +32,4 @@ class LibraryRepositoryImpl implements LibraryRepository {
       await _dio.delete('/library/$gameId');
     });
   }
-}
-
-abstract class LibraryRepository {
-  Future<List<Game>> getMyLibrary();
-  Future<void> addToLibrary(String gameId);
-  Future<void> removeFromLibrary(String gameId);
 }

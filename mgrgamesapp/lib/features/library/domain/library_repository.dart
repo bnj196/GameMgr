@@ -1,4 +1,4 @@
-import '../domain/game.dart';
+import '../../catalog/domain/game.dart';
 
 abstract class LibraryRepository {
   Future<List<Game>> getMyLibrary();
@@ -8,7 +8,7 @@ abstract class LibraryRepository {
 
 class MockLibraryRepository implements LibraryRepository {
   final List<Game> _games;
-
+  
   MockLibraryRepository({List<Game>? games}) : _games = games ?? [];
 
   @override
