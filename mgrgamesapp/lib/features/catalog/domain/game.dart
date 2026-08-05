@@ -15,6 +15,8 @@ class Game {
     this.owned = false,
     this.sizeGb,
     this.badge,
+    this.releaseDate,
+    this.version,
   });
 
   final String id;
@@ -30,10 +32,13 @@ class Game {
   final bool owned;
   final double? sizeGb;
   final String? badge; // hot | new | sale
+  final String? releaseDate;
+  final String? version;
 
   factory Game.fromJson(Map<String, dynamic> json) {
     final pricing = json['pricing'] as Map<String, dynamic>?;
     final media = json['media'] as Map<String, dynamic>?;
+    final ownership = json['ownership'] as Map<String, dynamic>?;
 
     return Game(
       id: json['id']?.toString() ?? '',
@@ -50,10 +55,13 @@ class Game {
       },
       price: (pricing?['price'] as num?)?.toDouble(),
       currency: pricing?['currency']?.toString(),
-      owned: (json['ownership'] as Map?)?['owned'] == true,
+      owned: ownership?['owned'] == true,
       sizeGb: json['sizeInBytes'] is num
           ? (json['sizeInBytes'] as num).toDouble() / (1024 * 1024 * 1024)
           : null,
+      badge: json['badge']?.toString(),
+      releaseDate: json['releaseDate']?.toString(),
+      version: json['version']?.toString(),
     );
   }
 

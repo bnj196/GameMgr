@@ -17,8 +17,9 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) {
     return safeCall(() async {
+      // Backend API expects: email, password
       final res = await _dio.post('/auth/login', data: {
-        'identifier': identifier,
+        'email': identifier,
         'password': password,
       });
       final tokens = AuthTokens.fromJson(res.data['data']);
@@ -37,10 +38,11 @@ class AuthRepositoryImpl implements AuthRepository {
     required String displayName,
   }) {
     return safeCall(() async {
+      // Backend API expects: email, password, username
       await _dio.post('/auth/register', data: {
-        'identifier': identifier,
+        'email': identifier,
         'password': password,
-        'displayName': displayName,
+        'username': displayName,
       });
       return login(identifier: identifier, password: password);
     });
@@ -55,5 +57,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> logout() => safeCall(() => _dio.post('/auth/logout'));
+  Future<void> logout() async {
+    // Backend doesn't have a logout endpoint, just clear local tokens
+    await _tokenStorage.clear();
+  }
 }
