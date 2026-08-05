@@ -19,11 +19,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register Routers
-app.include_router(auth.router)
-app.include_router(users.router)
-app.include_router(catalog.router)
-app.include_router(library.router)
+# Register Routers with /api prefix
+app.include_router(auth.router, prefix="/api")
+app.include_router(users.router, prefix="/api")
+app.include_router(catalog.router, prefix="/api")
+app.include_router(library.router, prefix="/api")
 
 @app.on_event("startup")
 def seed_database():
