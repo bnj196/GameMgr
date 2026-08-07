@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/widgets/common_widgets.dart';
+import '../../catalog/domain/game.dart';
 import '../../download/download_manager.dart';
 import '../domain/library_repository.dart';
 
