@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/constants/api_constants.dart';
+import '../catalog/domain/catalog_repository.dart';
 import '../catalog/domain/game.dart';
 
 enum DownloadStatus { queued, downloading, paused, completed, failed }
@@ -30,9 +31,12 @@ class DownloadState extends Equatable {
 }
 
 class DownloadManager extends Cubit<DownloadState> {
-  DownloadManager(this._dio) : super(const DownloadState());
+  DownloadManager(this._catalogRepository) : super(const DownloadState());
 
-  final Dio _dio;
+  final CatalogRepository _catalogRepository;
+
+  /// Dio riêng cho CDN: không gắn baseUrl/Authorization của backend
+  final Dio _downloadDio = Dio();
   final Map<String, Timer> _mockTimers = {};
 
   Future<void> start(Game game) async {
@@ -48,8 +52,7 @@ class DownloadManager extends Cubit<DownloadState> {
 
     try {
       // 1. Lấy link tải từ server (SRS-DL-01)
-      final res = await _dio.get('/games/${game.id}/download-url');
-      final url = res.data['data']['url'].toString();
+      final url = await _catalogRepository.getDownloadUrl(game.id);
 
       // 2. Tải về (SRS-DL-02)
       final dir = await getApplicationDocumentsDirectory();
@@ -57,7 +60,8 @@ class DownloadManager extends Cubit<DownloadState> {
       task.status = DownloadStatus.downloading;
       _emit();
 
-      await _dio.download(url, savePath, onReceiveProgress: (received, total) {
+      await _downloadDio.download(url, savePath,
+          onReceiveProgress: (received, total) {
         if (total > 0) {
           task.progress = received / total;
           _emit();

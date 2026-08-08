@@ -1,9 +1,31 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from core.database import get_db
-from core.security import get_password_hash, verify_password, create_access_token
+from jose import JWTError
+from core.security import (
+    get_password_hash,
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+)
 from models.models import User
-from schemas.schemas import UserCreate, UserLogin, Token, APIResponse, UserResponse
+from schemas.schemas import (
+    UserCreate,
+    UserLogin,
+    RefreshRequest,
+    Token,
+    APIResponse,
+    UserResponse,
+)
+
+
+def _issue_tokens(user: User) -> Token:
+    subject = str(user.id)
+    return Token(
+        accessToken=create_access_token(data={"sub": subject}),
+        refreshToken=create_refresh_token(data={"sub": subject}),
+    )
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -30,5 +52,23 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
             detail={"code": "AUTH_001", "message": "Email hoặc mật khẩu chưa đúng."}
         )
     
-    access_token = create_access_token(data={"sub": str(db_user.id)})
-    return APIResponse(data=Token(accessToken=access_token, refreshToken="mock_refresh_token"))
+    return APIResponse(data=_issue_tokens(db_user))
+
+@router.post("/refresh", response_model=APIResponse[Token])
+def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
+    try:
+        claims = decode_token(payload.refreshToken, expected_type="refresh")
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"code": "AUTH_002", "message": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."},
+        )
+
+    user = db.query(User).filter(User.id == int(claims["sub"])).first()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"code": "AUTH_002", "message": "Phiên đăng nhập không hợp lệ."},
+        )
+
+    return APIResponse(data=_issue_tokens(user))

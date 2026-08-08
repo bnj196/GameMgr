@@ -4,8 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/di/injection.dart';
+import '../../../core/error/app_exception.dart';
 import '../../../core/widgets/common_widgets.dart';
 import '../../download/download_manager.dart';
+import '../../library/domain/library_repository.dart';
 import '../domain/catalog_repository.dart';
 import '../domain/game.dart';
 
@@ -18,12 +20,18 @@ class GameDetailScreen extends StatefulWidget {
 }
 
 class _GameDetailScreenState extends State<GameDetailScreen> {
-  late final Future<Game> _future;
+  late Future<Game> _future;
 
   @override
   void initState() {
     super.initState();
     _future = getIt<CatalogRepository>().getGameDetail(widget.id);
+  }
+
+  void _reload() {
+    setState(() {
+      _future = getIt<CatalogRepository>().getGameDetail(widget.id);
+    });
   }
 
   @override
@@ -35,23 +43,41 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           return const Scaffold(body: LoadingView());
         }
         if (snapshot.hasError || !snapshot.hasData) {
+          final error = snapshot.error;
           return Scaffold(
             appBar: AppBar(),
             body: ErrorView(
-              message: snapshot.error?.toString() ?? 'Không tải được game.',
-              onRetry: () => setState(() {}),
+              message: error is AppException
+                  ? error.message
+                  : 'Không tải được game.',
+              code: error is AppException ? error.code : null,
+              onRetry: _reload,
             ),
           );
         }
-        return _DetailBody(game: snapshot.data!);
+        return _DetailBody(game: snapshot.data!, onLibraryChanged: _reload);
       },
     );
   }
 }
 
 class _DetailBody extends StatelessWidget {
-  const _DetailBody({required this.game});
+  const _DetailBody({required this.game, required this.onLibraryChanged});
   final Game game;
+  final VoidCallback onLibraryChanged;
+
+  Future<void> _addToLibrary(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await getIt<LibraryRepository>().addToLibrary(game.id);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Đã thêm vào thư viện.')),
+      );
+      onLibraryChanged();
+    } on AppException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
 
   Future<void> _play(BuildContext context) async {
     // Mobile: khởi chạy game bằng deep link (SRS-DL-08)
@@ -91,7 +117,16 @@ class _DetailBody extends StatelessWidget {
       );
     }
 
-    if (game.owned || game.priceType == PriceType.free) {
+    if (!game.owned && game.priceType == PriceType.free) {
+      return FilledButton.icon(
+        onPressed: () => _addToLibrary(context),
+        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+        icon: const Icon(Icons.library_add_outlined),
+        label: const Text('Thêm vào thư viện'),
+      );
+    }
+
+    if (game.owned) {
       return FilledButton.icon(
         onPressed: () => dm.start(game),
         style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),

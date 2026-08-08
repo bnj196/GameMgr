@@ -1,8 +1,7 @@
-import '../../../core/network/api_client.dart';
-import '../../../core/error/failure.dart';
+import '../../../core/error/app_exception.dart';
 import '../domain/catalog_repository.dart';
 import '../domain/game.dart';
-import '../../library/domain/library_repository.dart' show mockGames;
+import 'mock_data.dart';
 
 class MockCatalogRepository implements CatalogRepository {
   final List<Game> _games;

@@ -1,9 +1,8 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/network/api_client.dart';
-import '../../../core/error/failure.dart';
 import '../../catalog/domain/game.dart';
-import 'library_repository.dart';
+import '../domain/library_repository.dart';
 
 class LibraryRepositoryImpl implements LibraryRepository {
   final Dio _dio;

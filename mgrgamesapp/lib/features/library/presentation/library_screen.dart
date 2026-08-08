@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/di/injection.dart';
+import '../../../core/error/app_exception.dart';
 import '../../../core/widgets/common_widgets.dart';
+import '../../catalog/domain/game.dart';
 import '../../download/download_manager.dart';
 import '../domain/library_repository.dart';
 
@@ -39,11 +41,21 @@ class _LibraryScreenState extends State<LibraryScreen> {
         _games = games;
         _loading = false;
       });
-    } catch (e) {
+    } on AppException catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = e.message;
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _remove(Game game) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _libraryRepo.removeFromLibrary(game.id);
+      await _loadLibrary();
+    } on AppException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
     }
   }
 
@@ -62,7 +74,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text('Lỗi: $_error'))
+              ? ErrorView(message: _error!, onRetry: _loadLibrary)
               : _games == null || _games!.isEmpty
                   ? const EmptyView(message: 'Thư viện của bạn đang trống.')
                   : BlocBuilder<DownloadManager, DownloadState>(
@@ -101,16 +113,27 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                         ],
                                       )
                                     : Text(installed ? 'Đã cài' : 'Chưa cài'),
-                                trailing: installed
-                                    ? FilledButton.tonal(
-                                        onPressed: () {},
-                                        child: const Text('Chơi'),
-                                      )
-                                    : FilledButton(
-                                        onPressed: () =>
-                                            context.read<DownloadManager>().start(game),
-                                        child: const Text('Tải'),
-                                      ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    installed
+                                        ? FilledButton.tonal(
+                                            onPressed: () {},
+                                            child: const Text('Chơi'),
+                                          )
+                                        : FilledButton(
+                                            onPressed: () => context
+                                                .read<DownloadManager>()
+                                                .start(game),
+                                            child: const Text('Tải'),
+                                          ),
+                                    IconButton(
+                                      tooltip: 'Xóa khỏi thư viện',
+                                      icon: const Icon(Icons.delete_outline),
+                                      onPressed: () => _remove(game),
+                                    ),
+                                  ],
+                                ),
                               ),
                             );
                           },

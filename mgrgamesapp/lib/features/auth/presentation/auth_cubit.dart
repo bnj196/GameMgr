@@ -77,6 +77,27 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  Future<void> register({
+    required String identifier,
+    required String password,
+    required String displayName,
+  }) async {
+    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
+    try {
+      final user = await _repository.register(
+        identifier: identifier,
+        password: password,
+        displayName: displayName,
+      );
+      emit(AuthState(status: AuthStatus.authenticated, user: user));
+    } on AppException catch (e) {
+      emit(AuthState(
+        status: AuthStatus.unauthenticated,
+        errorMessage: e.message,
+      ));
+    }
+  }
+
   Future<void> logout() async {
     try {
       await _repository.logout();

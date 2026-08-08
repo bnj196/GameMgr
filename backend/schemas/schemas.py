@@ -21,9 +21,12 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
+class RefreshRequest(BaseModel):
+    refreshToken: str
+
 class Token(BaseModel):
     accessToken: str
-    refreshToken: str # Mock refresh token for demo
+    refreshToken: str
 
 class UserResponse(BaseModel):
     id: int
@@ -61,3 +64,9 @@ class GameResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class GameListResponse(BaseModel):
+    items: List[GameResponse]
+    page: int
+    limit: int
+    total: int
