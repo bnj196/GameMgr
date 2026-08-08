@@ -13,6 +13,7 @@ import '../../features/catalog/domain/catalog_repository.dart';
 import '../../features/catalog/presentation/catalog_cubit.dart';
 import '../../features/download/download_manager.dart';
 import '../../features/library/data/library_repository_impl.dart';
+import '../../features/library/data/mock_library_repository.dart';
 import '../../features/library/domain/library_repository.dart';
 import '../constants/api_constants.dart';
 import '../network/api_client.dart';
@@ -27,8 +28,15 @@ Future<void> initDependencies() async {
   getIt.registerLazySingleton<TokenStorage>(
       () => TokenStorage(getIt<FlutterSecureStorage>()));
 
-  // Network
-  getIt.registerLazySingleton<Dio>(() => createDio(getIt<TokenStorage>()));
+  // Network. Khi refresh token thất bại -> đăng xuất để router đưa về /login
+  getIt.registerLazySingleton<Dio>(
+    () => createDio(
+      getIt<TokenStorage>(),
+      onSessionExpired: () {
+        if (getIt.isRegistered<AuthCubit>()) getIt<AuthCubit>().logout();
+      },
+    ),
+  );
 
   // Repositories (mock hoặc thật)
   if (ApiConstants.useMock) {
@@ -53,7 +61,7 @@ Future<void> initDependencies() async {
   getIt.registerLazySingleton<CatalogCubit>(
       () => CatalogCubit(getIt<CatalogRepository>()));
   getIt.registerLazySingleton<DownloadManager>(
-      () => DownloadManager(getIt<Dio>()));
+      () => DownloadManager(getIt<CatalogRepository>()));
 
   // Router
   getIt.registerLazySingleton<AppRouter>(() => AppRouter(getIt<AuthCubit>()));

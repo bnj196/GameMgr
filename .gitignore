@@ -1,4 +1,8 @@
-```
+# Python
+__pycache__/
+*.pyc
+venv/
+
 # Dependencies
 .pub/
 .dart_tool/
@@ -27,4 +31,3 @@ Thumbs.db
 build/
 dist/
 coverage/
-```

@@ -2,7 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from core.database import get_db
 from models.models import Game, User
-from schemas.schemas import APIResponse, GameResponse, PricingInfo, OwnershipInfo, MediaInfo
+from schemas.schemas import (
+    APIResponse,
+    GameResponse,
+    GameListResponse,
+    PricingInfo,
+    OwnershipInfo,
+    MediaInfo,
+)
 from api.users import get_current_user
 import json
 
@@ -23,21 +30,24 @@ def game_to_schema(game: Game, owned: bool = False) -> GameResponse:
         badge=game.badge
     )
 
-@router.get("", response_model=APIResponse[dict])
+@router.get("", response_model=APIResponse[GameListResponse])
 def get_games(
     q: str = Query(None, description="Search query"),
+    page: int = Query(1, ge=1, description="Trang, bắt đầu từ 1"),
+    limit: int = Query(20, ge=1, le=100, description="Số game mỗi trang"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     query = db.query(Game)
     if q:
         query = query.filter(Game.name.ilike(f"%{q}%"))
-    
-    games = query.all()
+
+    total = query.count()
+    games = query.offset((page - 1) * limit).limit(limit).all()
     owned_ids = {g.id for g in current_user.library}
-    
+
     items = [game_to_schema(g, g.id in owned_ids) for g in games]
-    return APIResponse(data={"items": items})
+    return APIResponse(data=GameListResponse(items=items, page=page, limit=limit, total=total))
 
 @router.get("/{game_id}", response_model=APIResponse[GameResponse])
 def get_game_detail(

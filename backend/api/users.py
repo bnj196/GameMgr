@@ -3,17 +3,16 @@ from sqlalchemy.orm import Session
 from core.database import get_db
 from models.models import User
 from schemas.schemas import APIResponse, UserResponse
-from core.security import create_access_token
-from jose import JWTError, jwt
-from core.config import settings
+from core.security import decode_token
+from jose import JWTError
 from fastapi.security import OAuth2PasswordBearer
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 router = APIRouter(prefix="/users", tags=["Users"])
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = decode_token(token, expected_type="access")
         user_id: str = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail={"code": "AUTH_002", "message": "Token không hợp lệ."})

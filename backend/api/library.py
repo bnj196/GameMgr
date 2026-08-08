@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from core.database import get_db
 from models.models import Game, User
-from schemas.schemas import APIResponse
+from schemas.schemas import APIResponse, GameResponse
 from api.users import get_current_user
+from typing import List
 
 router = APIRouter(prefix="/library", tags=["Library"])
 
-@router.get("", response_model=APIResponse[list])
+@router.get("", response_model=APIResponse[List[GameResponse]])
 def get_my_library(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     # Trả về danh sách game đã add vào thư viện
     from api.catalog import game_to_schema

@@ -13,6 +13,8 @@ class CatalogRepositoryImpl implements CatalogRepository {
     return safeCall(() async {
       final res = await _dio.get('/games', queryParameters: {
         if (query != null && query.isNotEmpty) 'q': query,
+        'page': page,
+        'limit': limit,
       });
       final items = res.data['data']['items'] as List? ?? [];
       return items
