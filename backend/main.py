@@ -1,8 +1,11 @@
+from datetime import datetime, timedelta
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import inspect, text
 from core.database import engine, Base, SessionLocal
 from models.models import Game, User
-from api import auth, users, catalog, library
+from api import auth, users, catalog, library, wishlist, orders, notifications
 import json
 
 # Tạo tables
@@ -24,10 +27,32 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(catalog.router, prefix="/api")
 app.include_router(library.router, prefix="/api")
+app.include_router(wishlist.router, prefix="/api")
+app.include_router(orders.router, prefix="/api")
+app.include_router(notifications.router, prefix="/api")
+
+# Cột thêm sau khi DB đã tồn tại; SQLite không có migration tool nên vá tại chỗ.
+ADDED_COLUMNS = {
+    "users": {"avatar_url": "VARCHAR", "bio": "VARCHAR"},
+    "games": {"released_at": "DATETIME"},
+}
+
+
+def migrate_schema():
+    inspector = inspect(engine)
+    with engine.begin() as conn:
+        for table, columns in ADDED_COLUMNS.items():
+            if not inspector.has_table(table):
+                continue
+            existing = {c["name"] for c in inspector.get_columns(table)}
+            for name, sql_type in columns.items():
+                if name not in existing:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {sql_type}"))
 
 @app.on_event("startup")
 def seed_database():
     """Tự động nạp dữ liệu mẫu khi khởi động server nếu DB đang trống"""
+    migrate_schema()
     db = SessionLocal()
     try:
         if db.query(Game).count() == 0:
@@ -41,14 +66,15 @@ def seed_database():
                 {"id": "game_6", "name": "Chiến Trường Huyền Thoại", "slug": "chien-truong-huyen-thoai", "desc": "Mô tả ngắn gọn hấp dẫn cho game demo 6.", "genres": ["FPS", "Chiến thuật"], "platforms": ["android", "ios"], "price_type": "free", "price": None, "size": 3200000000, "badge": None},
             ]
             
-            for g in mock_games:
+            for index, g in enumerate(mock_games):
                 db_game = Game(
                     id=g["id"], name=g["name"], slug=g["slug"], short_description=g["desc"],
                     genres=json.dumps(g["genres"]), platforms=json.dumps(g["platforms"]),
                     thumbnail=f"https://picsum.photos/seed/{g['id']}/600/800",
                     banner=f"https://picsum.photos/seed/{g['id']}_b/1200/500",
                     price_type=g["price_type"], price=g["price"], currency="VND",
-                    size_bytes=g["size"], badge=g["badge"]
+                    size_bytes=g["size"], badge=g["badge"],
+                    released_at=datetime.utcnow() - timedelta(days=index * 30),
                 )
                 db.add(db_game)
             db.commit()

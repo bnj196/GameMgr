@@ -9,6 +9,7 @@ from core.security import (
     create_refresh_token,
     decode_token,
 )
+from core.notifications import push_notification
 from models.models import User
 from schemas.schemas import (
     UserCreate,
@@ -38,9 +39,20 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     hashed_pw = get_password_hash(user.password)
     new_user = User(email=user.email, username=user.username, hashed_password=hashed_pw)
     db.add(new_user)
+    db.flush()
+
+    push_notification(
+        db,
+        new_user.id,
+        type="system",
+        title=f"Chào mừng {new_user.username}!",
+        body="Tài khoản GameHub của bạn đã sẵn sàng. Khám phá kho game ngay nhé.",
+        deep_link="/home",
+    )
+
     db.commit()
     db.refresh(new_user)
-    
+
     return APIResponse(data=UserResponse(id=new_user.id, email=new_user.email, displayName=new_user.username))
 
 @router.post("/login", response_model=APIResponse[Token])
